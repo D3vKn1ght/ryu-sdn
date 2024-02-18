@@ -43,6 +43,8 @@ class LinuxRouter( Node ):
         super( LinuxRouter, self).config( **params )
         # Enable forwarding on the router
         self.cmd( 'sysctl net.ipv4.ip_forward=1' )
+    
+
 
     def terminate( self ):
         self.cmd( 'sysctl net.ipv4.ip_forward=0' )
@@ -60,10 +62,15 @@ class NetworkTopo( Topo ):
 
         s1, s2, s3 = [ self.addSwitch( s ) for s in ( 's1', 's2', 's3' ) ]
 
+        # DMZ
         self.addLink( s1, router, intfName2='r0-eth1',
                       params2={ 'ip' : defaultIP } )  # for clarity
+        
+        #Internal
         self.addLink( s2, router, intfName2='r0-eth2',
                       params2={ 'ip' : '172.16.0.1/12' } )
+        
+        # Internet
         self.addLink( s3, router, intfName2='r0-eth3',
                       params2={ 'ip' : '10.0.0.1/8' } )
 
