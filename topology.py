@@ -93,7 +93,7 @@ def run():
 
     net.start()
     s3 = net.get('s3')
-    s3.cmdPrint("ovs-vsctl add-port s3 ens36")
+    s3.cmdPrint("ovs-vsctl add-port s3 ens36") # Thêm card vào switch s3
     
     h3 = net.get('h3')
     info('\n*** Output of "ip addr" on h3:\n')
