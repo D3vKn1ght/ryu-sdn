@@ -74,16 +74,16 @@ class NetworkTopo( Topo ):
                       params2={ 'ip' : '172.16.0.1/24' } )
         
         # Internet
-        self.addLink( s3, router, intfName2='r0-internet',
-                      params2={ 'ip' : '10.0.0.1/24' } )
+        # self.addLink( s3, router, intfName2='r0-internet',
+        #               params2={ 'ip' : '10.0.0.1/24' } )
         
-        for i in range(1,4):
-            host=self.addHost('dmzhost'+str(i), ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute='via 192.168.1.1' )
-            self.addLink(host,s1)
-
         for i in range(1,3):
             host=self.addHost('inhost'+str(i), ip='172.16.0.'+str(random.randint(2,254))+'/24',  defaultRoute='via 172.16.0.1' )
             self.addLink(host,s2)
+
+        for i in range(1,4):
+            host=self.addHost('dmzhost'+str(i), ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute='via 192.168.1.1' )
+            self.addLink(host,s1)
 
         nethost=self.addHost('nethost', ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute=f'via {defaultIP}' )
         self.addLink(nethost,s1)
