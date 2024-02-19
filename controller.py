@@ -1,17 +1,24 @@
-# Copyright (C) 2011 Nippon Telegraph and Telephone Corporation.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#mininet
+# *** Creating network
+# *** Adding hosts:
+# h1 h2 h3 r0 
+# *** Adding switches:
+# s1 s2 s3 
+# *** Adding links:
+# (h1, s1) (h2, s2) (h3, s3) (s1, r0) (s2, r0) (s3, r0) 
+# *** Configuring hosts
+# h1 h2 h3 r0 
+# *** Starting controller
+# c0 
+# *** Starting 3 switches
+# s1 s2 s3 ...
+# *** Routing Table on Router:
+# Kernel IP routing table
+# Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+# 10.0.0.0        0.0.0.0         255.0.0.0       U     0      0        0 r0-eth3
+# 172.16.0.0      0.0.0.0         255.240.0.0     U     0      0        0 r0-eth2
+# 192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 r0-eth1
+
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
@@ -27,6 +34,12 @@ from ryu.lib.packet import ipv4
 from ryu.lib.packet import icmp
 from ryu.lib.packet import tcp
 from ryu.lib.packet import udp
+
+DMZ=1
+INTERNAL=2
+INTERNET=3
+IP_INTERNAL_RANGE="172.16.0."
+
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -52,22 +65,8 @@ class SimpleSwitch13(app_manager.RyuApp):
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
-
-        # DMZ switch 1
-        # Internal switch 2
-        # Internet switch 3
-
-        # # Drop all packets from Internet to Internal
-        # if datapath.id == 3:
-        #     match = parser.OFPMatch(in_port=1)
-        #     actions = []
-        #     self.add_flow(datapath, 1, match, actions)
-        
-        # #Allow all packets from DMZ to Internal and Internet
-        # if datapath.id == 2:
-        #     match = parser.OFPMatch(in_port=1)
-        #     actions = [parser.OFPActionOutput(2), parser.OFPActionOutput(3)]
-        #     self.add_flow(datapath, 1, match, actions)
+        self.logger.info("switch:%s connected", datapath.id)
+              
 
 
 
@@ -124,6 +123,8 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         actions = [parser.OFPActionOutput(out_port)]
 
+        
+
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
 
@@ -133,7 +134,13 @@ class SimpleSwitch13(app_manager.RyuApp):
                 srcip = ip.src
                 dstip = ip.dst
                 protocol = ip.proto
-                self.logger.info("srcip = %s, dstip = %s, protocol = %s", srcip, dstip, protocol)
+                self.logger.info("dpid=%s,in_port=%s,srcip = %s, dstip = %s, protocol = %s",dpid,in_port, srcip, dstip, protocol)
+
+                # check ip in 192.168.1.1/24
+                if dpid ==INTERNET and str(dstip).startswith("172.16.0.") is True:
+                    self.logger.info("Dropping packet from %s to %s", srcip, dstip)
+                    actions = []
+
             
                 # if ICMP Protocol
                 if protocol == in_proto.IPPROTO_ICMP:
