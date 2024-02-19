@@ -35,6 +35,7 @@ from mininet.log import setLogLevel, info
 from mininet.cli import CLI
 from mininet.link import Intf
 import random
+from define import *
 
 
 class LinuxRouter( Node ):
@@ -84,9 +85,10 @@ class NetworkTopo( Topo ):
             host=self.addHost('inhost'+str(i), ip='172.16.0.'+str(random.randint(2,254))+'/24',  defaultRoute='via 172.16.0.1' )
             self.addLink(host,s2)
 
-        for i in range(1,2):
-            host=self.addHost('nethost'+str(i), ip='10.0.0.'+str(random.randint(2,254))+'/24',  defaultRoute='via 10.0.0.1' )
-            self.addLink(host,s3)
+        nethost=self.addHost('nethost', ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute=f'via {defaultIP}' )
+        self.addLink(nethost,s1)
+        self.addLink(nethost,s3)
+
 
 def run():
     "Test linux router"
@@ -95,6 +97,15 @@ def run():
     net.addController('c0', controller=RemoteController, ip='127.0.0.1', port=6633)
 
     net.start()
+
+    s3 = net.get('s3')
+    s3.cmdPrint("ovs-vsctl add-br s3")
+    s3.cmdPrint(f"ovs-vsctl add-port s3 {nat_card}") # Thêm card vào switch s3
+    
+    nethost = net.get('nethost')
+    info('\n*** Output of "ip addr" on nethost:\n')
+    nethost.cmdPrint('ip addr')
+    nethost.cmdPrint('dhclient nethost-eth1')
 
 
     info( '*** Routing Table on Router:\n' )

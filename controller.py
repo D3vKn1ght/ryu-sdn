@@ -34,11 +34,7 @@ from ryu.lib.packet import ipv4
 from ryu.lib.packet import icmp
 from ryu.lib.packet import tcp
 from ryu.lib.packet import udp
-
-DMZ=1
-INTERNAL=2
-INTERNET=3
-IP_INTERNAL_RANGE="172.16.0."
+from define import *
 
 
 class SimpleSwitch13(app_manager.RyuApp):
@@ -78,6 +74,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
         if buffer_id:
+            self.logger.info("buffer_id:%s", buffer_id)
             mod = parser.OFPFlowMod(datapath=datapath, buffer_id=buffer_id,
                                     priority=priority, match=match,
                                     instructions=inst)
