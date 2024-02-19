@@ -53,6 +53,25 @@ class SimpleSwitch13(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
+        # DMZ switch 1
+        # Internal switch 2
+        # Internet switch 3
+
+        # # Drop all packets from Internet to Internal
+        # if datapath.id == 3:
+        #     match = parser.OFPMatch(in_port=1)
+        #     actions = []
+        #     self.add_flow(datapath, 1, match, actions)
+        
+        # #Allow all packets from DMZ to Internal and Internet
+        # if datapath.id == 2:
+        #     match = parser.OFPMatch(in_port=1)
+        #     actions = [parser.OFPActionOutput(2), parser.OFPActionOutput(3)]
+        #     self.add_flow(datapath, 1, match, actions)
+
+
+
+
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
