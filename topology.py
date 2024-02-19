@@ -108,6 +108,7 @@ def run():
     nethost.cmdPrint('dhclient nethost-eth0')
     nethost.cmdPrint('ifconfig nethost-eth1 10.0.0.5/24')
     nethost.cmdPrint('sudo ip route add 192.168.1.0/24 via 10.0.0.1 dev nethost-eth1')
+    nethost.cmdPrint('sudo ip route add 172.16.0.0/24 via 10.0.0.1 dev nethost-eth1')
 
     
   
