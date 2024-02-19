@@ -137,7 +137,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                 self.logger.info("dpid=%s,in_port=%s,srcip = %s, dstip = %s, protocol = %s",dpid,in_port, srcip, dstip, protocol)
 
                 # check ip in 192.168.1.1/24
-                if dpid ==INTERNET and str(dstip).startswith("172.16.0.") is True:
+                if dpid ==INTERNET and str(dstip).startswith(IP_INTERNAL_RANGE) is True:
                     self.logger.info("Dropping packet from %s to %s", srcip, dstip)
                     actions = []
 
