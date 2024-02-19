@@ -85,9 +85,10 @@ class NetworkTopo( Topo ):
             host=self.addHost('dmzhost'+str(i), ip='192.168.1.'+str(random.randint(5,254))+'/24',   defaultRoute=f'via 192.168.1.1' )
             self.addLink(host,s1)
 
-        nethost=self.addHost('nethost', ip='10.0.0.5',  defaultRoute=f'via 10.0.0.1' )
-        self.addLink(nethost,s3)
+        nethost=self.addHost('nethost',ip="10.0.0.5")
         self.addLink(nethost,s4)
+        self.addLink(nethost,s3)
+
 
 
 def run():
@@ -98,14 +99,18 @@ def run():
 
     net.start()
 
-    s3 = net.get('s3')
-    s3.cmdPrint(f"ovs-vsctl add-port s4 {nat_card}") # Thêm card vào switch s3
+    s4 = net.get('s4')
+    s4.cmdPrint(f"ovs-vsctl add-port s4 {nat_card}") # Thêm card vào switch s3
     
     nethost = net.get('nethost')
     info('\n*** Output of "ip addr" on nethost:\n')
     nethost.cmdPrint('ip addr')
-    nethost.cmdPrint('dhclient nethost-eth1')
+    nethost.cmdPrint('dhclient nethost-eth0')
+    nethost.cmdPrint('ifconfig nethost-eth1 10.0.0.5/24')
+    nethost.cmdPrint('sudo ip route add 192.168.1.0/24 via 10.0.0.1 dev nethost-eth1')
 
+    
+  
 
     info( '*** Routing Table on Router:\n' )
     info( net[ 'r0' ].cmd( 'route' ) )
