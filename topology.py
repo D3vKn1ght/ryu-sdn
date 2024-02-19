@@ -9,15 +9,15 @@ already built into Linux.
 The example topology creates a router and three IP subnets:
 
     - 192.168.1.0/24 (r0-eth1, IP: 192.168.1.1)
-    - 172.16.0.0/12 (r0-eth2, IP: 172.16.0.1)
-    - 10.0.0.0/8 (r0-eth3, IP: 10.0.0.1)
+    - 172.16.0.0/12 (r0-eth3, IP: 172.16.0.1)
+    - 10.0.0.0/8 (r0-eth4, IP: 10.0.0.1)
 
 Each subnet consists of a single host connected to
 a single switch:
 
     r0-eth1 - s1-eth1 - h1-eth0 (IP: 192.168.1.100)
-    r0-eth2 - s2-eth1 - h2-eth0 (IP: 172.16.0.100)
-    r0-eth3 - s3-eth1 - h3-eth0 (IP: 10.0.0.100)
+    r0-eth3 - s2-eth1 - h3-eth0 (IP: 172.16.0.100)
+    r0-eth4 - s3-eth1 - h4-eth0 (IP: 10.0.0.100)
 
 The example relies on default routing entries that are
 automatically created for each router interface, as well
@@ -34,6 +34,8 @@ from mininet.node import Node,OVSSwitch, Controller, RemoteController
 from mininet.log import setLogLevel, info
 from mininet.cli import CLI
 from mininet.link import Intf
+import random
+from define import *
 
 
 class LinuxRouter( Node ):
@@ -44,6 +46,8 @@ class LinuxRouter( Node ):
         super( LinuxRouter, self).config( **params )
         # Enable forwarding on the router
         self.cmd( 'sysctl net.ipv4.ip_forward=1' )
+    
+
 
     def terminate( self ):
         self.cmd( 'sysctl net.ipv4.ip_forward=0' )
@@ -56,33 +60,34 @@ class NetworkTopo( Topo ):
     # pylint: disable=arguments-differ
     def build( self, **_opts ):
 
-        defaultIP = '192.168.1.1/24'  # IP address for r0-eth1
+        defaultIP = '192.168.1.1/24'  
         router = self.addNode( 'r0', cls=LinuxRouter, ip=defaultIP )
 
         s1, s2, s3 = [ self.addSwitch( s ) for s in ( 's1', 's2', 's3' ) ]
 
-        
-        #DMZ
-        self.addLink( s1, router, intfName2='r0-eth1',
+        # DMZ
+        self.addLink( s1, router, intfName2='r0-dmz',
                       params2={ 'ip' : defaultIP } )  # for clarity
+        
         #Internal
-        self.addLink( s2, router, intfName2='r0-eth2',
-                      params2={ 'ip' : '172.16.0.1/12' } )
-        #Internet
-        self.addLink( s3, router, intfName2='r0-eth3',
-                      params2={ 'ip' : '10.0.0.1/8' } )
+        self.addLink( s2, router, intfName2='r0-internal',
+                      params2={ 'ip' : '172.16.0.1/24' } )
+        
+        # Internet
+        self.addLink( s3, router, intfName2='r0-internet',
+                      params2={ 'ip' : '10.0.0.1/24' } )
+        
+        for i in range(1,4):
+            host=self.addHost('dmzhost'+str(i), ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute='via 192.168.1.1' )
+            self.addLink(host,s1)
 
-        h1 = self.addHost( 'h1', ip='192.168.1.100/24',
-                           defaultRoute='via 192.168.1.1' )
-        h2 = self.addHost( 'h2', ip='172.16.0.100/12',
-                           defaultRoute='via 172.16.0.1' )
-        # h3 = self.addHost( 'h3', ip='10.0.0.100/8',
-        #                    defaultRoute='via 10.0.0.1' )
+        for i in range(1,3):
+            host=self.addHost('inhost'+str(i), ip='172.16.0.'+str(random.randint(2,254))+'/24',  defaultRoute='via 172.16.0.1' )
+            self.addLink(host,s2)
 
-        h3 = self.addHost('h3', ip='0.0.0.0')
-
-        for h, s in [ (h1, s1), (h2, s2), (h3, s3) ]:
-            self.addLink( h, s )
+        nethost=self.addHost('nethost', ip='192.168.1.'+str(random.randint(2,254))+'/24',  defaultRoute=f'via {defaultIP}' )
+        self.addLink(nethost,s1)
+        self.addLink(nethost,s3)
 
 
 def run():
@@ -92,13 +97,16 @@ def run():
     net.addController('c0', controller=RemoteController, ip='127.0.0.1', port=6633)
 
     net.start()
+
     s3 = net.get('s3')
-    s3.cmdPrint("ovs-vsctl add-port s3 ens36") # Thêm card vào switch s3
+    s3.cmdPrint("ovs-vsctl add-br s3")
+    s3.cmdPrint(f"ovs-vsctl add-port s3 {nat_card}") # Thêm card vào switch s3
     
-    h3 = net.get('h3')
-    info('\n*** Output of "ip addr" on h3:\n')
-    h3.cmdPrint('ip addr')
-    h3.cmdPrint('dhclient '+h3.defaultIntf().name)
+    nethost = net.get('nethost')
+    info('\n*** Output of "ip addr" on nethost:\n')
+    nethost.cmdPrint('ip addr')
+    nethost.cmdPrint('dhclient nethost-eth1')
+
 
     info( '*** Routing Table on Router:\n' )
     info( net[ 'r0' ].cmd( 'route' ) )
