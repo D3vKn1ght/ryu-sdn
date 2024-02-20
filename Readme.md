@@ -1,6 +1,6 @@
 # RYU - SDN
 
-### Requirement:
+### Yêu cầu:
 
 - RYU ( hoặc docker)
 - Mininet
