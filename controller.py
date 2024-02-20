@@ -108,7 +108,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+        # self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
@@ -122,37 +122,36 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         
 
-        # install a flow to avoid packet_in next time
-        if out_port != ofproto.OFPP_FLOOD:
+       
+        # check IP Protocol and create a match for IP
+        if eth.ethertype == ether_types.ETH_TYPE_IP:
+            ip = pkt.get_protocol(ipv4.ipv4)
+            srcip = ip.src
+            dstip = ip.dst
+            protocol = ip.proto
+            self.logger.info("dpid=%s,in_port=%s,srcip = %s, dstip = %s, protocol = %s",dpid,in_port, srcip, dstip, protocol)
 
-            # check IP Protocol and create a match for IP
-            if eth.ethertype == ether_types.ETH_TYPE_IP:
-                ip = pkt.get_protocol(ipv4.ipv4)
-                srcip = ip.src
-                dstip = ip.dst
-                protocol = ip.proto
-                self.logger.info("dpid=%s,in_port=%s,srcip = %s, dstip = %s, protocol = %s",dpid,in_port, srcip, dstip, protocol)
+            # check ip in IP_INTERNAL_RANGE
+            if dpid ==INTERNET and str(dstip).startswith(IP_INTERNAL_RANGE) is True:
+                self.logger.info("Dropping packet from %s to %s", srcip, dstip)
+                actions = []
+        
+            # if ICMP Protocol
+            if protocol == in_proto.IPPROTO_ICMP:
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol)
+        
+            #  if TCP Protocol
+            elif protocol == in_proto.IPPROTO_TCP:
+                t = pkt.get_protocol(tcp.tcp)
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol, tcp_src=t.src_port, tcp_dst=t.dst_port,)
+        
+            #  If UDP Protocol 
+            elif protocol == in_proto.IPPROTO_UDP:
+                u = pkt.get_protocol(udp.udp)
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol, udp_src=u.src_port, udp_dst=u.dst_port,)  
 
-                # check ip in 192.168.1.1/24
-                if dpid ==INTERNET and str(dstip).startswith(IP_INTERNAL_RANGE) is True:
-                    self.logger.info("Dropping packet from %s to %s", srcip, dstip)
-                    actions = []
-
-            
-                # if ICMP Protocol
-                if protocol == in_proto.IPPROTO_ICMP:
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol)
-            
-                #  if TCP Protocol
-                elif protocol == in_proto.IPPROTO_TCP:
-                    t = pkt.get_protocol(tcp.tcp)
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol, tcp_src=t.src_port, tcp_dst=t.dst_port,)
-            
-                #  If UDP Protocol 
-                elif protocol == in_proto.IPPROTO_UDP:
-                    u = pkt.get_protocol(udp.udp)
-                    match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP, ipv4_src=srcip, ipv4_dst=dstip, ip_proto=protocol, udp_src=u.src_port, udp_dst=u.dst_port,)            
-
+            # install a flow to avoid packet_in next time
+            if out_port != ofproto.OFPP_FLOOD:
                 # verify if we have a valid buffer_id, if yes avoid to send both
                 # flow_mod & packet_out
                 if msg.buffer_id != ofproto.OFP_NO_BUFFER:
