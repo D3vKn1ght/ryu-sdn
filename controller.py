@@ -1,23 +1,23 @@
-#mininet
 # *** Creating network
 # *** Adding hosts:
-# h1 h2 h3 r0 
+# dmzhost1 dmzhost2 dmzhost3 inhost1 inhost2 nethost r0 
 # *** Adding switches:
-# s1 s2 s3 
+# s1 s2 s3 s4 
 # *** Adding links:
-# (h1, s1) (h2, s2) (h3, s3) (s1, r0) (s2, r0) (s3, r0) 
+# (dmzhost1, s1) (dmzhost2, s1) (dmzhost3, s1) (inhost1, s2) (inhost2, s2) (nethost, s3) (nethost, s4) (s1, r0) (s2, r0) (s3, r0) 
 # *** Configuring hosts
-# h1 h2 h3 r0 
+# dmzhost1 dmzhost2 dmzhost3 inhost1 inhost2 nethost r0 
 # *** Starting controller
 # c0 
-# *** Starting 3 switches
-# s1 s2 s3 ...
+# *** Starting 4 switches
+# s1 s2 s3 s4
 # *** Routing Table on Router:
 # Kernel IP routing table
 # Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-# 10.0.0.0        0.0.0.0         255.0.0.0       U     0      0        0 r0-eth3
-# 172.16.0.0      0.0.0.0         255.240.0.0     U     0      0        0 r0-eth2
-# 192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 r0-eth1
+# 10.0.0.0        0.0.0.0         255.255.255.0   U     0      0        0 r0-internet
+# 172.16.0.0      0.0.0.0         255.255.255.0   U     0      0        0 r0-internal
+# 192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 r0-dmz
+
 
 
 from ryu.base import app_manager
